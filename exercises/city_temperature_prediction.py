@@ -56,7 +56,7 @@ if __name__ == '__main__':
     # grouping by 'Month'
     grouped_by_month = data.groupby('Month').agg({'Temp' : np.std})
 
-    fig = px.scatter(grouped_by_month, x=np.arange(1,13), y="Temp",
+    fig = px.bar(grouped_by_month, x=np.arange(1,13), y="Temp",
                     labels={'x': "Month",
                             'Temp': "Temp (std)"},
                     title="std Temp as a function of Month")
