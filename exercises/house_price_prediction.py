@@ -1,6 +1,11 @@
+# from statistics import linear_regression
+from turtle import title
+
+from pyparsing import PrecededBy
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
+import os
 from typing import NoReturn
 import numpy as np
 import pandas as pd
@@ -23,7 +28,49 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    raise NotImplementedError()
+
+    #load all data
+    full_data = pd.read_csv(filename).dropna().drop_duplicates()
+    features = full_data[["sqft_living",
+                          "sqft_lot",
+                          "sqft_basement",
+                          "floors",
+                          "bedrooms",
+                          "bathrooms",
+                          "condition",
+                          "view",
+                          "grade",
+                          "yr_built",
+                          "yr_renovated",
+                          "waterfront",
+                          "sqft_lot15",
+                          "sqft_living15",
+                          "sqft_above",
+                          "lat",
+                          "long",
+                          "zipcode",
+                           "id", 
+                           "date"
+                          ]]
+    labels = full_data["price"]
+
+    # preproccesing the data
+
+    #deleate unnecessary features:
+    features = features.drop(columns=["zipcode", "id", "date"])
+
+
+    # one-hot for zipcode-feature
+    # zipcode = full_data.pop("zipcode")
+    # one_hot = pd.get_dummies(zipcode, prefix='Zip_code')
+   
+    # # adit featurs matrix
+    # features = pd.concat([features, one_hot], axis=1)
+
+
+    return features, labels
+    
+
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -39,23 +86,45 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 
     y : array-like of shape (n_samples, )
         Response vector to evaluate against
-
-    output_path: str (default ".")
+ 
+   output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
+    #create dir
+   # os.makedirs(output_path)
+
+    #create plots
+    for i, feature in  enumerate(X):
+       
+        #check if needed
+        # if "zipcode" in feature: break
+
+        corr = np.cov(X[feature], y)[0,1] / (np.std(X[feature]) * np.std(y))
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x= X[feature], y= y, mode="markers"))
+        fig.update_xaxes(title_text=feature)
+        fig.update_yaxes(title_text="price")
+        fig.update_layout(title_text=f"Correlation value: {corr}")
+        fig.write_image(os.path.join(output_path, "plot_for_feature_%d.png"% i)) 
+
+      
+
+
+        
 
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
-
+    featurs, labels = load_data("/home/alonbentzi/IML.HUJI/datasets/house_prices.csv")
+    
+    
+    
+  
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
-
+    # feature_evaluation(featurs, labels, "/home/alonbentzi/IML.HUJI/exercises/.plots")
+    
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
+    train_x, train_y, test_x, test_y = split_train_test(featurs, labels)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -64,4 +133,43 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+
+
+    percentages = np.arange(10,101)
+    mean_loss = []
+    std_loss = []
+    for percent in range(10, 101, 1):
+        
+        temp_losses = np.empty((10,))
+        
+        for experiment_number in range(10):
+            
+            sub_train_x = train_x.sample(frac=percent/100, axis=0)  
+            sub_train_y = train_y.loc[sub_train_x.index]
+            model = LinearRegression(False)
+            model.fit(sub_train_x, sub_train_y)
+
+            loss = model._loss(test_x, test_y)
+            temp_losses[experiment_number] = loss
+
+        mean_loss.append(temp_losses.mean())
+        std_loss.append(temp_losses.std()) 
+
+    #convert arrays to np arrays for plotly
+    mean_loss = np.array(mean_loss)
+    std_loss = np.array(std_loss)
+
+    # plot average loss as function of training size with error ribbon of size(mean-2*std, mean+2*std)  
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=percentages, y=mean_loss, mode="markers+lines", name="Mean Loss", line=dict(dash="dash"), marker=dict(color="green", opacity=.7)))
+    fig.add_trace(go.Scatter(x=percentages, y=mean_loss-2*std_loss, fill=None, mode="lines", line=dict(color="lightgrey"), showlegend=False))
+    fig.add_trace(go.Scatter(x=percentages, y=mean_loss+2*std_loss, fill='tonexty', mode="lines", line=dict(color="lightgrey"), showlegend=False))
+    fig.update_layout(title=r"Average loss as a function of Sampels percent with ribbon of (+,-) 2*std",
+                         height=300)
+    fig.write_image(os.path.join("/home/alonbentzi/IML.HUJI/exercises/.plots", "avg_loss_as_f_of_S_percent.png"))                     
+
+
+
+
+
