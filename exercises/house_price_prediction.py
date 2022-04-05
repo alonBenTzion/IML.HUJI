@@ -91,13 +91,15 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 
 if __name__ == '__main__':
     np.random.seed(0)
+    
+    # Question 1 - load data
     featurs, labels = load_data("/home/alonbentzi/IML.HUJI/datasets/house_prices.csv")
     
     
     
   
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(featurs, labels, "/home/alonbentzi/IML.HUJI/exercises/.plots")
+    feature_evaluation(featurs, labels, "/home/alonbentzi/IML.HUJI/exercises/.plots")
     
     # Question 3 - Split samples into training- and testing sets.
     train_x, train_y, test_x, test_y = split_train_test(featurs, labels)
