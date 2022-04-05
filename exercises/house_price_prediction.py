@@ -1,4 +1,5 @@
 # from statistics import linear_regression
+from re import X
 from turtle import title
 
 from pyparsing import PrecededBy
@@ -30,44 +31,25 @@ def load_data(filename: str):
     """
 
     #load all data
-    full_data = pd.read_csv(filename).dropna().drop_duplicates()
-    features = full_data[["sqft_living",
-                          "sqft_lot",
-                          "sqft_basement",
-                          "floors",
-                          "bedrooms",
-                          "bathrooms",
-                          "condition",
-                          "view",
-                          "grade",
-                          "yr_built",
-                          "yr_renovated",
-                          "waterfront",
-                          "sqft_lot15",
-                          "sqft_living15",
-                          "sqft_above",
-                          "lat",
-                          "long",
-                          "zipcode",
-                           "id", 
-                           "date"
-                          ]]
-    labels = full_data["price"]
+    df = pd.read_csv(filename).dropna().drop_duplicates()
+    # preproccesing the data:
+    
 
-    # preproccesing the data
+    #irrelevant featurs
+    df = df.drop(columns=["zipcode", "id", "date", "lat", "long"])
 
-    #deleate unnecessary features:
-    features = features.drop(columns=["zipcode", "id", "date"])
+    # values range according to Kaggle site
+    df = df[(df.view >= 0) & (df.view <= 4)]
+    df = df[(df.grade >= 1) & (df.grade <= 13)]
+    df = df[(df.condition >= 1) & (df.condition <= 5)]
+    df = df[df.yr_built >= 1900]
+    df = df[df.price > 0]
+    df = df[df.sqft_living > 0]
+    df = df[df.sqft_living >= df.sqft_above]
 
-
-    # one-hot for zipcode-feature
-    # zipcode = full_data.pop("zipcode")
-    # one_hot = pd.get_dummies(zipcode, prefix='Zip_code')
-   
-    # # adit featurs matrix
-    # features = pd.concat([features, one_hot], axis=1)
-
-
+    labels = df["price"]
+    features = df.drop(columns="price")
+    
     return features, labels
     
 
@@ -90,22 +72,16 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
    output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    #create dir
-   # os.makedirs(output_path)
-
+    
     #create plots
     for i, feature in  enumerate(X):
-       
-        #check if needed
-        # if "zipcode" in feature: break
-
         corr = np.cov(X[feature], y)[0,1] / (np.std(X[feature]) * np.std(y))
         fig = go.Figure()
         fig.add_trace(go.Scatter(x= X[feature], y= y, mode="markers"))
         fig.update_xaxes(title_text=feature)
         fig.update_yaxes(title_text="price")
         fig.update_layout(title_text=f"Correlation value: {corr}")
-        fig.write_image(os.path.join(output_path, "plot_for_feature_%d.png"% i)) 
+        fig.write_image(os.path.join(output_path, "price_as_func_of_%s.png"% feature)) 
 
       
 
@@ -165,8 +141,10 @@ if __name__ == '__main__':
     fig.add_trace(go.Scatter(x=percentages, y=mean_loss, mode="markers+lines", name="Mean Loss", line=dict(dash="dash"), marker=dict(color="green", opacity=.7)))
     fig.add_trace(go.Scatter(x=percentages, y=mean_loss-2*std_loss, fill=None, mode="lines", line=dict(color="lightgrey"), showlegend=False))
     fig.add_trace(go.Scatter(x=percentages, y=mean_loss+2*std_loss, fill='tonexty', mode="lines", line=dict(color="lightgrey"), showlegend=False))
-    fig.update_layout(title=r"Average loss as a function of Sampels percent with ribbon of (+,-) 2*std",
-                         height=300)
+    fig.update_layout(go.Layout(
+            title_text="Average loss as a function of Sampels percentage with ribbon of (+,-) 2*std",
+            xaxis={"title": "Train set percentage"},
+            yaxis={"title": "MSE Loss"}))
     fig.write_image(os.path.join("/home/alonbentzi/IML.HUJI/exercises/.plots", "avg_loss_as_f_of_S_percent.png"))                     
 
 
