@@ -2,6 +2,7 @@
 from re import X
 from turtle import title
 
+from scipy import stats
 from pyparsing import PrecededBy
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
@@ -46,6 +47,8 @@ def load_data(filename: str):
     df = df[df.price > 0]
     df = df[df.sqft_living > 0]
     df = df[df.sqft_living >= df.sqft_above]
+    #remove outliners
+    df[(np.abs(stats.zscore(df)) < 3).all(axis=1)]
 
     labels = df["price"]
     features = df.drop(columns="price")
@@ -99,7 +102,7 @@ if __name__ == '__main__':
     
   
     # Question 2 - Feature evaluation with respect to response
-    feature_evaluation(featurs, labels, "/home/alonbentzi/IML.HUJI/exercises/.plots")
+    # feature_evaluation(featurs, labels, "/home/alonbentzi/IML.HUJI/exercises/.plots")
     
     # Question 3 - Split samples into training- and testing sets.
     train_x, train_y, test_x, test_y = split_train_test(featurs, labels)
@@ -124,8 +127,8 @@ if __name__ == '__main__':
             
             sub_train_x = train_x.sample(frac=percent/100, axis=0)  
             sub_train_y = train_y.loc[sub_train_x.index]
-            model = LinearRegression(False)
-            model.fit(sub_train_x, sub_train_y)
+            model = LinearRegression()
+            model._fit(sub_train_x, sub_train_y)
 
             loss = model._loss(test_x, test_y)
             temp_losses[experiment_number] = loss
