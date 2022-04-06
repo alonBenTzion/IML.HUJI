@@ -54,12 +54,10 @@ if __name__ == '__main__':
     fig.write_image(os.path.join("/home/alonbentzi/IML.HUJI/exercises/.plots", "Israel_data.png"))             
 
     # grouping by 'Month'
-    grouped_by_month = data.groupby('Month').agg({'Temp' : np.std})
+    IL_by_month = Israel_data.groupby(['Month']).Temp.agg(std='std')
 
-    fig = px.bar(grouped_by_month, x=np.arange(1,13), y="Temp",
-                    labels={'x': "Month",
-                            'Temp': "Temp (std)"},
-                    title="std Temp as a function of Month")
+    fig = px.bar(IL_by_month, x=IL_by_month.index, y="std",
+                    title="STD Temp as a function of Month in Israel")
                     
     fig.write_image(os.path.join("/home/alonbentzi/IML.HUJI/exercises/.plots", "Month_tmp.png"))   
 
