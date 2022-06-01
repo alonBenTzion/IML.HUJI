@@ -13,6 +13,16 @@
             "justMyCode": true,
             "cwd": "${workspaceFolder}",
             "env": {"PYTHONPATH": "${workspaceFolder}/"}
+        },
+        {
+            "name": "Ex5",
+            "type": "python",
+            "request": "launch",
+            "program": "exercises/perform_model_selection.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONPATH": "${workspaceFolder}/"}
         }
     ]
 }
