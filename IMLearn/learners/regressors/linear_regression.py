@@ -1,9 +1,10 @@
 from __future__ import annotations
+from tkinter import N
 from typing import NoReturn
 from ...base import BaseEstimator
 import numpy as np
 from numpy.linalg import pinv
-from IMLearn.metrics import loss_functions
+from IMLearn.metrics.loss_functions import mean_square_error
 
 
 
@@ -51,9 +52,7 @@ class LinearRegression(BaseEstimator):
         -----
         Fits model with or without an intercept depending on value of `self.include_intercept_`
         """
-        if self.include_intercept_:
-            X = np.column_stack((np.ones(X.shape[0]), X))   
-        self.coefs_ = pinv(X) @ y
+        self.coefs_ = pinv(self.__handle_intercept(X)) @ y
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -69,9 +68,8 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        if self.include_intercept_:
-            X = np.column_stack((np.ones(X.shape[0]), X))
-        return X @ self.coefs_
+
+        return self.__handle_intercept(X) @ self.coefs_
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -90,4 +88,16 @@ class LinearRegression(BaseEstimator):
         loss : float
             Performance under MSE loss function
         """
-        return loss_functions.mean_square_error(self._predict(X), y)
+        return mean_square_error(y, self._predict(X))
+
+    def __handle_intercept(self, X: np.ndarray) -> np.ndarray:
+        """Adds intercept column if needed
+        Args:
+            X (np.ndarray): Input array
+        Returns:
+            np.ndarray: Processed array 
+        """
+        if self.include_intercept_:
+            n_samples = X.shape[0]
+            X = np.hstack((np.ones(shape=(n_samples,1)), X))
+        return X    
