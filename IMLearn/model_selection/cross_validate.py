@@ -1,12 +1,14 @@
 from __future__ import annotations
 from copy import deepcopy
+from random import sample
 from typing import Tuple, Callable
 import numpy as np
 from IMLearn import BaseEstimator
+from IMLearn.utils.utils import split_train_test    
 
 
 def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
-                   scoring: Callable[[np.ndarray, np.ndarray, ...], float], cv: int = 5) -> Tuple[float, float]:
+                   scoring: Callable[[np.ndarray, np.ndarray,], float], cv: int = 5) -> Tuple[float, float]: #check about ... in the brackets of callable
     """
     Evaluate metric by cross-validation for given estimator
 
@@ -37,4 +39,27 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     validation_score: float
         Average validation score over folds
     """
-    raise NotImplementedError()
+    #prepering the folds
+    num_of_samples = X.shape[0]
+    # concat = np.concatenate((X,y),axis=1)
+    # np.random.shuffle(concat)
+    groups = np.tile(np.arange(cv), (num_of_samples // cv) + 1)
+    #cut extra slots in groups
+    groups_cut = groups[:num_of_samples]
+    
+    training_loss = []
+    validation_loss = []
+    #training the model
+    for fold in range(cv):
+        train_samples = X[groups_cut != fold]
+        validation_samples = X[groups_cut == fold]
+        train_labels = y[groups_cut != fold]
+        validation_labels = y[groups_cut == fold]
+        
+
+        estimator.fit(train_samples, train_labels)
+        validation_loss.append(scoring(validation_labels, estimator.predict(validation_samples)))
+        training_loss.append(scoring(train_labels, estimator.predict(train_samples)))
+
+    return np.mean(training_loss), np.mean(validation_loss)    
+        
