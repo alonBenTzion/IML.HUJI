@@ -1,5 +1,6 @@
 from __future__ import annotations
 from email.policy import default
+from pickle import TRUE
 import numpy as np
 import pandas as pd
 from sklearn import datasets
@@ -86,7 +87,7 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     best_k = np.argmin(validation_loss_array)
     model = PolynomialFitting(best_k).fit(train_x, train_y)
     loss = np.round(mean_square_error(model.predict(test_x), test_y), 2)
-    print(best_k, loss)
+    print(f"Best k value : {best_k}, with loss of:  {loss}")
 
 
 
@@ -114,7 +115,7 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
     
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    lambdas = np.linspace(0.01, 2.5, n_evaluations)
+    lambdas = np.linspace(0.01, 5, n_evaluations)
     train_loss_ridge = []
     validation_loss_ridge = []
     train_loss_lasso = []
@@ -125,8 +126,10 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
          l_train_loss, l_validation_loss = cross_validate(Lasso(lam), train_x, train_y, mean_square_error)
          train_loss_lasso.append(l_train_loss), validation_loss_lasso.append(l_validation_loss)
 
-    fig = go.Figure([
-                    go.Scatter(x=lambdas,
+    fig = make_subplots(rows=1, cols=2,
+                        start_cell="bottom-left",
+                        subplot_titles=("Ridge Loss", "Lasso Loss"))
+    fig.add_traces([go.Scatter(x=lambdas,
                                 y=train_loss_ridge,
                                 mode="markers",
                                 name="train_loss_ridge",
@@ -136,26 +139,20 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
                                 y= validation_loss_ridge,
                                 mode="markers",
                                  name="validation_loss_ridge",
-                                line=dict(color="blue"),
-                                showlegend=True),
+                                line=dict(color="blue")),
                     go.Scatter(x=lambdas,
                                 y=train_loss_lasso,
                                 mode="markers",
                                  name="train_loss_lasso",
-                                line=dict(color="red"),
-                                showlegend=True),
+                                line=dict(color="red")),                         
                     go.Scatter(x=lambdas,
                                 y=validation_loss_lasso,
                                 mode="markers",
                                  name="validation_loss_lasso",
-                                line=dict(color="yellow"),
-                                showlegend=True)            
-                   
-                     ])
-    fig.update_layout(
-        title=f"Compering the loss of lasso and ridge regression as a function of lambda",
-        xaxis_title="lamda",
-        yaxis_title="loss")
+                                line=dict(color="yellow")),
+                               ],rows=[1,1,1,1], cols=[1,1,2,2])      
+    fig.update_xaxes(title_text="lambda", row=1)
+    fig.update_yaxes(title_text="Loss",row=1)                                                 
     fig.show()
 
 
@@ -175,8 +172,8 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
 
 if __name__ == '__main__':
     np.random.seed(0)
-    # select_polynomial_degree()
-    # select_polynomial_degree(default, 0)
-    # select_polynomial_degree(1500, 10)
-    select_regularization_parameter()
+    select_polynomial_degree()
+    select_polynomial_degree(noise=0)
+    select_polynomial_degree(1500, 10)
+    # select_regularization_parameter()
 
