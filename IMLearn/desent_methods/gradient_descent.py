@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Callable, NoReturn
 import numpy as np
+from pyparsing import counted_array
 
 from IMLearn.base import BaseModule, BaseLR
 from .learning_rate import FixedLR
@@ -119,4 +120,44 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+        
+        sum_w = f.weights()
+        for iter in range(self.max_iter_):
+        
+            curr = GD_general_func()
+            flag = check_tolerance(curr) 
+            set_by_out_type()
+            if flag:
+                self.max_iter_ = iter
+                
+        if self.out_type_ == "average":
+            f.weights(sum_w / self.max_iter_)        
+            
+
+        def set_by_out_type():
+            if(self.out_type_ == "best"): set_by_best()
+            elif(self.out_type_ == "last"): set_by_last()
+            elif(self.out_type_ == "average"): set_by_average()  
+        
+        def GD_general_func():
+            return f.weights() - self.learning_rate_ * f.compute_jacobian()
+      
+        def set_by_last():
+            f.weights(GD_general_func())
+       
+        def set_by_best():
+            prev = f.weights
+            prev_value = f.compute_output
+            curr = GD_general_func()    
+            f.weights(curr)
+            curr_value = f.compute_output()
+            if curr_value > prev_value:
+                f.weights(prev)
+        
+        def set_by_average():
+            set_by_last()
+            sum_w = sum_w + f.weights()         
+
+        def check_tolerance(curr:np.ndarray)->bool:
+            return self.tol_ol <   np.linalg.norm((curr - f.weights()), ord=2)  
+
