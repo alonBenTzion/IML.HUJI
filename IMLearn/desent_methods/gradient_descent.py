@@ -123,13 +123,18 @@ class GradientDescent:
         
         sum_w = f.weights()
         for iter in range(self.max_iter_):
-        
-            curr = GD_general_func()
+            curr = GD_general_func(iter)
             flag = check_tolerance(curr) 
-            set_by_out_type()
+            set_by_out_type() 
+            self.callback_(self, f.weights(),
+                            f.compute_output(), 
+                            f.compute_jacobian(), 
+                            iter, 
+                            euclidean_norm())    
             if flag:
                 self.max_iter_ = iter
-                
+                break                
+        
         if self.out_type_ == "average":
             f.weights(sum_w / self.max_iter_)        
             
@@ -139,8 +144,8 @@ class GradientDescent:
             elif(self.out_type_ == "last"): set_by_last()
             elif(self.out_type_ == "average"): set_by_average()  
         
-        def GD_general_func():
-            return f.weights() - self.learning_rate_ * f.compute_jacobian()
+        def GD_general_func(iter:int):
+            return f.weights() - self.learning_rate_.lr_step(t=iter) * f.compute_jacobian()
       
         def set_by_last():
             f.weights(GD_general_func())
@@ -156,8 +161,11 @@ class GradientDescent:
         
         def set_by_average():
             set_by_last()
-            sum_w = sum_w + f.weights()         
+            sum_w = sum_w + f.weights()      
+
+        def euclidean_norm():
+            return np.linalg.norm((curr - f.weights()), ord=2)        
 
         def check_tolerance(curr:np.ndarray)->bool:
-            return self.tol_ol <   np.linalg.norm((curr - f.weights()), ord=2)  
+            return self.tol_ol <   euclidean_norm()  
 
