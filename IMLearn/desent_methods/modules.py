@@ -49,7 +49,7 @@ class L2(BaseModule):
         output: ndarray of shape (n_in,)
             L2 derivative with respect to self.weights at point self.weights
         """
-        raise 2 * np.linalg.norm(self.weights, ord=2)
+        raise 2 * self.weights_
 
 
 class L1(BaseModule):
@@ -94,7 +94,7 @@ class L1(BaseModule):
         output: ndarray of shape (n_in,)
             L1 derivative with respect to self.weights at point self.weights
         """
-        return np.sign(self.compute_output())
+        return np.sign(self.weights_)
 
 
 class LogisticModule(BaseModule):
