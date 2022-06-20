@@ -53,7 +53,7 @@ class LogisticRegression(BaseEstimator):
             X = np.column_stack((np.ones(X.shape[0]), X))
         init = np.random.normal(size=X.shape[1])/(X.shape[1]**0.5)
         lm = LogisticModule(init)
-        if self.penalty_ is not None:
+        if self.penalty_ != "none":
             rm = L1(init) if self.penalty_ == 'L1' else L2(init)
             self.module = RegularizedModule(lm, rm, self.lam_, init, self.include_intercept_)
         else:

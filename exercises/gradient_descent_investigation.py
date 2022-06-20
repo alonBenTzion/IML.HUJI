@@ -8,6 +8,10 @@ from IMLearn.desent_methods import GradientDescent, FixedLR, ExponentialLR
 from IMLearn.desent_methods.modules import L1, L2
 from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
+from sklearn.metrics import roc_curve
+from IMLearn.model_selection import  cross_validate
+from IMLearn.metrics import mean_square_error
+
 
 import plotly.graph_objects as go
 def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule):
@@ -165,13 +169,40 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
 def fit_logistic_regression():
     # Load and split SA Heard Disease dataset
     X_train, y_train, X_test, y_test = load_data()
+    gd = GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000)
+    lg = LogisticRegression(gd).fit(X=X_train, y=y_train)
+    fpr, tpr, thresholds = roc_curve(y_train, lg.predict_proba(X_train.to_numpy()))
+    fig = go.Figure(
+        data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
+                         line=dict(color="black", dash='dash'),
+                         name="Random Class Assignment"),
+              go.Scatter(x=fpr, y=tpr, mode='markers+lines', text=thresholds,
+                         name="", showlegend=False, marker_size=5,
+                         hovertemplate="<b>Threshold:</b>%{text:.3f}<br>FPR: %{x:.3f}<br>TPR: %{y:.3f}")],
+        layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model}}$",
+                        xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
+                        yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
+    fig.show()
+    fig.write_image("mnt/c/Users/אלון/Desktop\2nd year\semester B\IML/lgr_roc_curve.png")
+
+    
+    
+    alpha_hat = thresholds[np.argmax(tpr - fpr)]
+    print(f"best alpha value: {alpha_hat}")
 
     # Plotting convergence rate of logistic regression over SA heart disease data
-    raise NotImplementedError()
+    
 
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
-    raise NotImplementedError()
+    lambdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
+    cv = lambda reg, lam :  cross_validate(LogisticRegression(gd, penalty=reg, alpha=0.5, lam=lam), X_train.to_numpy(),
+                                        np.array(y_train), mean_square_error)
+    for regulator in ['l1', 'l2']:
+        lambdas_scores = [cv(regulator, lam)[1] for lam in lambdas]
+        best_lambda = lambdas[np.argmin(lambdas_scores)]
+        loss = LogisticRegression(penalty=regulator, alpha=0.5, lam=best_lambda).fit(X_train, y_train).loss(X_test, y_test)
+        print(f'{regulator} : lambda {best_lambda}, loss {loss}')
 
 
 if __name__ == '__main__':
