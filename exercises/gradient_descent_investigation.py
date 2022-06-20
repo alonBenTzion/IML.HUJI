@@ -72,31 +72,39 @@ def plot_descent_path(module: Type[BaseModule],
 
 
 
+def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarray], List[np.ndarray]]:
     """
     Callback generator for the GradientDescent class, recording the objective's value and parameters at each iteration
-    
+
+    Return:
+    -------
+    callback: Callable[[], None]
+        Callback function to be passed to the GradientDescent class, recoding the objective's value and parameters
+        at each iteration of the algorithm
+
+    values: List[np.ndarray]
+        Recorded objective values
+
+    weights: List[np.ndarray]
+        Recorded parameters
     """
-    
+    weights_arr, values_arr = [], []
+
+    def func(weights, val, **kwargs):
+        weights_arr.append(weights)
+        values_arr.append(val)
+
+    return func, weights_arr, values_arr
+
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    # plot L1 GD
     for module in [L1, L2]:
         for eta in etas:
-            values = []
-            weights_ls = []
-            def callback_1(solver: GradientDescent,
-                                weights: np.ndarray,
-                                val: np.ndarray,
-                                grad: np.ndarray,
-                                t: int,
-                                eta: float,
-                                delta: float):
-                    values.append(val)
-                    weights_ls.append(weights)  
+            callback, weights_ls, values = get_gd_state_recorder_callback()
             m = module(init)          
-            GradientDescent(FixedLR(eta),callback=callback_1).fit(f=m,X=None,y=None)
+            GradientDescent(FixedLR(eta),callback=callback).fit(f=m,X=None,y=None)
             #plotting the trajectory
             plot_descent_path(module, np.asarray(weights_ls), title=f"{module}, lr = {eta} - descent trajectory").show()
             #plotting the convergence rate
@@ -108,13 +116,18 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    raise NotImplementedError()
-
+    for gama in gammas:
+        callback, weights_ls, values = get_gd_state_recorder_callback()
+        GradientDescent(ExponentialLR(eta, gama), callback).fit(L1(init), None, None) 
     # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
+        plot_convergence_rate(values, eta, L1)
 
+    
     # Plot descent path for gamma=0.95
-    raise NotImplementedError()
+    callback, weights, values = get_gd_state_recorder_callback() 
+    GradientDescent(ExponentialLR(eta, decay_rate=0.95), callback).fit(L2(init), None, None)
+    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').show()
+    
 
 
 def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \
