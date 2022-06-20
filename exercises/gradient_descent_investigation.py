@@ -1,3 +1,4 @@
+from matplotlib.pyplot import flag
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Callable, Type
@@ -9,6 +10,19 @@ from IMLearn.learners.classifiers.logistic_regression import LogisticRegression
 from IMLearn.utils import split_train_test
 
 import plotly.graph_objects as go
+def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule):
+    fig = go.Figure([go.Scatter(x=list(range(len(y))),
+                                y=y, 
+                                mode="markers+lines",
+                                showlegend=True,
+                                marker=dict(color="black", opacity=.7),
+                                line=dict(color="black",
+                                width=1))],
+                                layout=go.Layout(title=f"{module}, lr = {lr} - Convergence Rate" ,
+                                                xaxis={"title": "x - Iterations"},   
+                                                yaxis={"title": "y - Value"},
+                                                height=400))
+    fig.show()                                            
 
 
 def plot_descent_path(module: Type[BaseModule],
@@ -57,29 +71,38 @@ def plot_descent_path(module: Type[BaseModule],
                                       title=f"GD Descent Path {title}"))
 
 
-def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarray], List[np.ndarray]]:
+
     """
     Callback generator for the GradientDescent class, recording the objective's value and parameters at each iteration
-
-    Return:
-    -------
-    callback: Callable[[], None]
-        Callback function to be passed to the GradientDescent class, recoding the objective's value and parameters
-        at each iteration of the algorithm
-
-    values: List[np.ndarray]
-        Recorded objective values
-
-    weights: List[np.ndarray]
-        Recorded parameters
+    
     """
-    raise NotImplementedError()
+    
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+    # plot L1 GD
+    for module in [L1, L2]:
+        for eta in etas:
+            values = []
+            weights_ls = []
+            def callback_1(solver: GradientDescent,
+                                weights: np.ndarray,
+                                val: np.ndarray,
+                                grad: np.ndarray,
+                                t: int,
+                                eta: float,
+                                delta: float):
+                    values.append(val)
+                    weights_ls.append(weights)  
+            m = module(init)          
+            GradientDescent(FixedLR(eta),callback=callback_1).fit(f=m,X=None,y=None)
+            #plotting the trajectory
+            plot_descent_path(module, np.asarray(weights_ls), title=f"{module}, lr = {eta} - descent trajectory").show()
+            #plotting the convergence rate
+            plot_convergence_rate(values, eta, module)
 
+    
 
 def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                     eta: float = .1,
@@ -141,5 +164,5 @@ def fit_logistic_regression():
 if __name__ == '__main__':
     np.random.seed(0)
     compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
-    fit_logistic_regression()
+    # compare_exponential_decay_rates()
+    # fit_logistic_regression()

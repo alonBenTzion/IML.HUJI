@@ -120,52 +120,36 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        
-        sum_w = f.weights()
-        for iter in range(self.max_iter_):
-            curr = GD_general_func(iter)
-            flag = check_tolerance(curr) 
-            set_by_out_type() 
-            self.callback_(self, f.weights(),
-                            f.compute_output(), 
-                            f.compute_jacobian(), 
-                            iter, 
-                            euclidean_norm())    
-            if flag:
-                self.max_iter_ = iter
-                break                
-        
-        if self.out_type_ == "average":
-            f.weights(sum_w / self.max_iter_)        
+        tol = self.tol_ + 1
+        iter_num = 1
+        res = f.compute_output(X=X, y=y)
+        best = res
+        mean = res
+        while self.max_iter_ > iter_num and self.tol_ < tol:
+            cur_w = f.weights_
+            gradient = f.compute_jacobian(X=X, y=y)
+            lr = self.learning_rate_.lr_step(t=iter_num)
+            f.weights_ = cur_w - lr * gradient
+            tol = np.linalg.norm(f.weights_ - cur_w)
+            res = f.compute_output(X=X, y=y)
+            if res < best:
+                best = res
+            mean += res
+            self.callback_(solver=self,
+                           weights=f.weights_,
+                           val=res,
+                           grad=f.compute_jacobian(X=X, y=y),
+                           t=iter_num,
+                           eta=lr,
+                           delta=tol)
+            iter_num += 1
+        if self.out_type_ == 'best':
+            return best
+        if self.out_type_ == 'mean':
+            return mean / iter_num
+        if self.out_type_ == 'last':
+            return res    
             
 
-        def set_by_out_type():
-            if(self.out_type_ == "best"): set_by_best()
-            elif(self.out_type_ == "last"): set_by_last()
-            elif(self.out_type_ == "average"): set_by_average()  
-        
-        def GD_general_func(iter:int):
-            return f.weights() - self.learning_rate_.lr_step(t=iter) * f.compute_jacobian()
       
-        def set_by_last():
-            f.weights(GD_general_func())
-       
-        def set_by_best():
-            prev = f.weights
-            prev_value = f.compute_output
-            curr = GD_general_func()    
-            f.weights(curr)
-            curr_value = f.compute_output()
-            if curr_value > prev_value:
-                f.weights(prev)
-        
-        def set_by_average():
-            set_by_last()
-            sum_w = sum_w + f.weights()      
-
-        def euclidean_norm():
-            return np.linalg.norm((curr - f.weights()), ord=2)        
-
-        def check_tolerance(curr:np.ndarray)->bool:
-            return self.tol_ol <   euclidean_norm()  
 
