@@ -14,7 +14,7 @@ from IMLearn.metrics import mean_square_error
 
 
 import plotly.graph_objects as go
-def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule):
+def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule, iter:int, flag:int = 0):
     fig = go.Figure([go.Scatter(x=list(range(len(y))),
                                 y=y, 
                                 mode="markers+lines",
@@ -26,7 +26,8 @@ def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule):
                                                 xaxis={"title": "x - Iterations"},   
                                                 yaxis={"title": "y - Value"},
                                                 height=400))
-    fig.show()                                            
+    # fig.show()     
+    fig.write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/convergence_{iter}_{flag}.png")                                       
 
 
 def plot_descent_path(module: Type[BaseModule],
@@ -105,14 +106,14 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
     for module in [L1, L2]:
-        for eta in etas:
+        for iter,eta in enumerate(etas):
             callback, weights_ls, values = get_gd_state_recorder_callback()
             m = module(init)          
             GradientDescent(FixedLR(eta),callback=callback).fit(f=m,X=None,y=None)
             #plotting the trajectory
-            plot_descent_path(module, np.asarray(weights_ls), title=f"{module}, lr = {eta} - descent trajectory").show()
+            plot_descent_path(module, np.asarray(weights_ls), title=f"{module}, lr = {eta} - descent trajectory").write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/traj{iter}.png")
             #plotting the convergence rate
-            plot_convergence_rate(values, eta, module)
+            plot_convergence_rate(values, eta, module, iter)
 
     
 
@@ -120,17 +121,17 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    for gama in gammas:
+    for iter, gama in enumerate(gammas):
         callback, weights_ls, values = get_gd_state_recorder_callback()
         GradientDescent(ExponentialLR(eta, gama), callback).fit(L1(init), None, None) 
     # Plot algorithm's convergence for the different values of gamma
-        plot_convergence_rate(values, eta, L1)
+        plot_convergence_rate(values, eta, L1, iter, 1)
 
     
     # Plot descent path for gamma=0.95
     callback, weights, values = get_gd_state_recorder_callback() 
     GradientDescent(ExponentialLR(eta, decay_rate=0.95), callback).fit(L2(init), None, None)
-    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').show()
+    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/traj_exp_decay{iter}.png")
     
 
 
@@ -182,8 +183,8 @@ def fit_logistic_regression():
         layout=go.Layout(title=rf"$\text{{ROC Curve Of Fitted Model}}$",
                         xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
                         yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
-    fig.show()
-    fig.write_image("mnt/c/Users/אלון/Desktop\2nd year\semester B\IML/lgr_roc_curve.png")
+    #fig.show()
+    fig.write_image("/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/lgr_roc_curve.png")
 
     
     
