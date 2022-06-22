@@ -12,7 +12,7 @@ class LogisticRegression(BaseEstimator):
 
     def __init__(self,
                  include_intercept: bool = True,
-                 solver: GradientDescent = GradientDescent(),
+                 solver: GradientDescent = GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000),
                  penalty: str = "none",
                  lam: float = 1,
                  alpha: float = .5):
@@ -75,7 +75,7 @@ class LogisticRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return np.array([1 if i > self.alpha_ else 0 for i in self.predict_proba(X)])
+        return np.where(self.predict_proba(X) > self.alpha_, 1, 0)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
@@ -93,8 +93,7 @@ class LogisticRegression(BaseEstimator):
         """
         if self.include_intercept_:
             X = np.column_stack((np.ones(X.shape[0]), X))
-        sigmoid = lambda x:  1 / (1 + np.exp(-1 * x))        
-        return np.apply_along_axis(sigmoid, (X@self.module.weights))
+        return np.exp(X @ self.coefs_) / (np.exp(X @ self.coefs_) + 1)
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Evaluate performance under misclassification error

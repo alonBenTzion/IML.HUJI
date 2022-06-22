@@ -14,7 +14,7 @@ from IMLearn.metrics import mean_square_error
 
 
 import plotly.graph_objects as go
-def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule, iter:int, flag:int = 0):
+def plot_convergence_rate(y:np.ndarray, title:str):
     fig = go.Figure([go.Scatter(x=list(range(len(y))),
                                 y=y, 
                                 mode="markers+lines",
@@ -22,12 +22,12 @@ def plot_convergence_rate(y:np.ndarray, lr:float, module:BaseModule, iter:int, f
                                 marker=dict(color="black", opacity=.7),
                                 line=dict(color="black",
                                 width=1))],
-                                layout=go.Layout(title=f"{module}, lr = {lr} - Convergence Rate" ,
+                                layout=go.Layout(title=title ,
                                                 xaxis={"title": "x - Iterations"},   
                                                 yaxis={"title": "y - Value"},
                                                 height=400))
     # fig.show()     
-    fig.write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/convergence_{iter}_{flag}.png")                                       
+    fig.write_image(f"exercises/.plots/ex6/{title}.png")                                       
 
 
 def plot_descent_path(module: Type[BaseModule],
@@ -105,15 +105,16 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    for module in [L1, L2]:
-        for iter,eta in enumerate(etas):
+    for module in [[L1, "L1"], [L2, "L2"]]:
+        for eta in etas:
             callback, weights_ls, values = get_gd_state_recorder_callback()
-            m = module(init)          
+            m = module[0](init)          
             GradientDescent(FixedLR(eta),callback=callback).fit(f=m,X=None,y=None)
             #plotting the trajectory
-            plot_descent_path(module, np.asarray(weights_ls), title=f"{module}, lr = {eta} - descent trajectory").write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/traj{iter}.png")
+            plot_descent_path(module[0], np.asarray(weights_ls),
+                             title=f"{module[1]}, lr = {eta} - descent trajectory").write_image(f"exercises/.plots/ex6/traj_{module[1]}_{eta}.png")
             #plotting the convergence rate
-            plot_convergence_rate(values, eta, module, iter)
+            plot_convergence_rate(values, title=f"{module[1]} convergence rate with fixed lr = {eta}")
 
     
 
@@ -121,17 +122,17 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
                                     eta: float = .1,
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    for iter, gama in enumerate(gammas):
-        callback, weights_ls, values = get_gd_state_recorder_callback()
-        GradientDescent(ExponentialLR(eta, gama), callback).fit(L1(init), None, None) 
+    for gama in gammas:
+        cb, weights_ls, values = get_gd_state_recorder_callback()
+        GradientDescent(ExponentialLR(eta, gama), callback=cb).fit(L1(init), None, None) 
     # Plot algorithm's convergence for the different values of gamma
-        plot_convergence_rate(values, eta, L1, iter, 1)
+        plot_convergence_rate(values, title=f"L1 convergence rate with gamma = {gama}")
 
     
     # Plot descent path for gamma=0.95
-    callback, weights, values = get_gd_state_recorder_callback() 
-    GradientDescent(ExponentialLR(eta, decay_rate=0.95), callback).fit(L2(init), None, None)
-    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').write_image(f"/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/traj_exp_decay{iter}.png")
+    cb, weights, values = get_gd_state_recorder_callback() 
+    GradientDescent(ExponentialLR(eta, decay_rate=0.95),callback=cb).fit(L2(init), None, None)
+    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').write_image(f"exercises/.plots/ex6/traj_exp_decay_0.95.png")
     
 
 
@@ -170,8 +171,7 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
 def fit_logistic_regression():
     # Load and split SA Heard Disease dataset
     X_train, y_train, X_test, y_test = load_data()
-    gd = GradientDescent(learning_rate=FixedLR(1e-4), max_iter=20000)
-    lg = LogisticRegression(gd).fit(X=X_train, y=y_train)
+    lg = LogisticRegression().fit(X=X_train, y=y_train)
     fpr, tpr, thresholds = roc_curve(y_train, lg.predict_proba(X_train.to_numpy()))
     fig = go.Figure(
         data=[go.Scatter(x=[0, 1], y=[0, 1], mode="lines",
@@ -184,7 +184,7 @@ def fit_logistic_regression():
                         xaxis=dict(title=r"$\text{False Positive Rate (FPR)}$"),
                         yaxis=dict(title=r"$\text{True Positive Rate (TPR)}$")))
     #fig.show()
-    fig.write_image("/mnt/c/Users/אלון/Desktop/2nd\ year/semester\ B/IML/ex6/lgr_roc_curve.png")
+    fig.write_image("exercises/.plots/ex6/lgr_roc_curve.png")
 
     
     
@@ -197,7 +197,7 @@ def fit_logistic_regression():
     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
     # of regularization parameter
     lambdas = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]
-    cv = lambda reg, lam :  cross_validate(LogisticRegression(gd, penalty=reg, alpha=0.5, lam=lam), X_train.to_numpy(),
+    cv = lambda reg, lam :  cross_validate(LogisticRegression(penalty=reg, alpha=0.5, lam=lam), X_train.to_numpy(),
                                         np.array(y_train), mean_square_error)
     for regulator in ['l1', 'l2']:
         lambdas_scores = [cv(regulator, lam)[1] for lam in lambdas]
@@ -208,6 +208,6 @@ def fit_logistic_regression():
 
 if __name__ == '__main__':
     np.random.seed(0)
-    compare_fixed_learning_rates()
-    # compare_exponential_decay_rates()
+    # compare_fixed_learning_rates()
+    compare_exponential_decay_rates()
     # fit_logistic_regression()
