@@ -3,7 +3,7 @@ from typing import NoReturn
 import numpy as np
 
 from IMLearn import BaseEstimator
-from IMLearn.desent_methods import GradientDescent
+from IMLearn.desent_methods import GradientDescent, FixedLR
 from IMLearn.desent_methods.modules import LogisticModule, RegularizedModule, L1, L2
 from ...metrics import misclassification_error
 

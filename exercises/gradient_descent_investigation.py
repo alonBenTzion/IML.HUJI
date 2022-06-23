@@ -107,9 +107,20 @@ def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e /
                                  etas: Tuple[float] = (1, .1, .01, .001)):
     for module in [[L1, "L1"], [L2, "L2"]]:
         for eta in etas:
-            callback, weights_ls, values = get_gd_state_recorder_callback()
+            values = []
+            weights_ls = []
+
+            def recorder_func(solver: GradientDescent,
+                               weights: np.ndarray,
+                               val: np.ndarray,
+                               grad: np.ndarray,
+                               t: int,
+                               eta: float,
+                               delta: float):
+                values.append(val)
+                weights_ls.append(weights)
             m = module[0](init)          
-            GradientDescent(FixedLR(eta),callback=callback).fit(f=m,X=None,y=None)
+            GradientDescent(FixedLR(eta),callback=recorder_func).fit(f=m,X=None,y=None)
             #plotting the trajectory
             plot_descent_path(module[0], np.asarray(weights_ls),
                              title=f"{module[1]}, lr = {eta} - descent trajectory").write_image(f"exercises/.plots/ex6/traj_{module[1]}_{eta}.png")
@@ -123,16 +134,31 @@ def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.
                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
     for gama in gammas:
-        cb, weights_ls, values = get_gd_state_recorder_callback()
-        GradientDescent(ExponentialLR(eta, gama), callback=cb).fit(L1(init), None, None) 
-    # Plot algorithm's convergence for the different values of gamma
+        values = []
+        weights_ls = []
+
+        def recorder_func(solver: GradientDescent,
+                            weights: np.ndarray,
+                            val: np.ndarray,
+                            grad: np.ndarray,
+                            t: int,
+                            eta: float,
+                            delta: float):
+            values.append(val)
+            weights_ls.append(weights)
+        
+        GradientDescent(ExponentialLR(eta, gama), callback=recorder_func).fit(L1(init), None, None) 
+        # Plot algorithm's convergence for the different values of gamma
         plot_convergence_rate(values, title=f"L1 convergence rate with gamma = {gama}")
+        # Plot descent path for gamma=0.95
+        if gama == 0.95:
+             plot_descent_path(L1, np.asarray(weights_ls), f'gama {gama}').write_image(f"exercises/.plots/ex6/traj_exp_decay_0.95.png")
 
     
-    # Plot descent path for gamma=0.95
-    cb, weights, values = get_gd_state_recorder_callback() 
-    GradientDescent(ExponentialLR(eta, decay_rate=0.95),callback=cb).fit(L2(init), None, None)
-    plot_descent_path(L2, np.asarray(weights), f'gama {gama}').write_image(f"exercises/.plots/ex6/traj_exp_decay_0.95.png")
+    
+    
+  
+   
     
 
 
@@ -209,5 +235,5 @@ def fit_logistic_regression():
 if __name__ == '__main__':
     np.random.seed(0)
     # compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
-    # fit_logistic_regression()
+    # compare_exponential_decay_rates()
+    fit_logistic_regression()

@@ -41,8 +41,6 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     """
     #prepering the folds
     num_of_samples = X.shape[0]
-    # concat = np.concatenate((X,y),axis=1)
-    # np.random.shuffle(concat)
     groups = np.tile(np.arange(cv), (num_of_samples // cv) + 1)
     #cut extra slots in groups
     groups_cut = groups[:num_of_samples]

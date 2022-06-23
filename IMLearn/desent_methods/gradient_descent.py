@@ -1,4 +1,5 @@
 from __future__ import annotations
+from os import preadv
 from typing import Callable, NoReturn
 import numpy as np
 
@@ -121,33 +122,33 @@ class GradientDescent:
         """
         tol = self.tol_ + 1
         iter_num = 1
-        res = f.compute_output(X=X, y=y)
-        best = res
-        mean = res
+        best_output = f.compute_output(X=X, y=y)
+        prev = f.weights
+        curr = prev
+        best = prev
+        sum = prev
         while self.max_iter_ > iter_num and self.tol_ < tol:
-            cur_w = f.weights_
-            gradient = f.compute_jacobian(X=X, y=y)
-            lr = self.learning_rate_.lr_step(t=iter_num)
-            f.weights_ = cur_w - lr * gradient
-            tol = np.linalg.norm(f.weights_ - cur_w)
-            res = f.compute_output(X=X, y=y)
-            if res < best:
-                best = res
-            mean += res
             self.callback_(solver=self,
                            weights=f.weights_,
-                           val=res,
+                           val=best_output,
                            grad=f.compute_jacobian(X=X, y=y),
                            t=iter_num,
-                           eta=lr,
+                           eta=self.learning_rate_.lr_step(t=iter_num),
                            delta=tol)
+            prev = curr
+            curr = curr - self.learning_rate_.lr_step(t=iter_num)*f.compute_jacobian(X=X, y=y)
+            f.weights_ = curr
+            tol = np.linalg.norm(curr - prev)
+            best_output, best = [best_output, best] if best_output <= f.compute_output(X=X, y=y) else [f.compute_output(X=X, y=y), curr]
+            sum = sum + curr
             iter_num += 1
+        
         if self.out_type_ == 'best':
             return best
         if self.out_type_ == 'mean':
-            return mean / iter_num
+            return sum / iter_num
         if self.out_type_ == 'last':
-            return res    
+            return curr    
             
 
       
